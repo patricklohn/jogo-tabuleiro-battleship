@@ -159,10 +159,11 @@ def draw_status(player, tiros):
 def show_help_screen():
     DISPLAYSURF.fill(BGCOLOR)
     msgs = [
-        'Clique em um quadrado para atirar.',
-        'Tiros são contabilizados no canto superior.',
-        'Objetivo: afundar todos os navios do adversário.',
-        'Pressione qualquer tecla para voltar.'
+        'Para atirar, clique em uma célula do tabuleiro adversário.',
+        'O total de disparos é exibido no canto superior esquerdo.',
+        'Acertos disparam uma animação de explosão; erros revelam água.',
+        'A vez passa automaticamente após cada tiro.',
+        'Pressione qualquer tecla para voltar ao jogo.'
     ]
     for i, line in enumerate(msgs):
         surf, rect = make_text_objs(line, BASICFONT, TEXTCOLOR)
