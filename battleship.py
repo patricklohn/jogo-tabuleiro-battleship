@@ -14,9 +14,10 @@ Requisitos Técnicos: listas, filas, pilhas, análise Big O, interface Pygame.
 import os
 import random
 import sys
+from collections import deque # fila para turnos
+
 import pygame
 from pygame.locals import QUIT, MOUSEBUTTONUP, KEYDOWN, K_s, K_m
-from collections import deque  # fila para turnos
 
 # ------- Configurações Globais -------
 FPS = 30
@@ -424,7 +425,8 @@ def add_ships_to_board(board, ships):
     return nb
 
 
-def make_ship_position(board, x, y, hor, length, ship):
+def make_ship_position(board, ship_config):
+    x, y, hor, length, ship = ship_config
     """Calcula e retorna as coordenadas se o navio couber sem conflito."""
     coords = []
     for i in range(length):
