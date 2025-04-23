@@ -11,10 +11,6 @@ Versão para dois jogadores do clássico jogo: Batalha Naval.
 Requisitos Técnicos: listas, filas, pilhas, análise Big O, interface Pygame.
 """
 
-# pylint: disable=import-error, wrong-import-order, global-statement, too-many-locals, \
-#     too-many-branches, too-many-statements, too-many-arguments, too-many-positional-arguments, \
-#     missing-function-docstring
-
 import os
 import random
 import sys
@@ -40,19 +36,20 @@ XMARGIN = (WINDOWWIDTH - (BOARDWIDTH * TILESIZE) - DISPLAYWIDTH - MARKERSIZE) //
 YMARGIN = (WINDOWHEIGHT - (BOARDHEIGHT * TILESIZE) - MARKERSIZE) // 2
 
 # Cores (RGB)
-BLACK = (0, 0, 0)
-WHITE = (255, 255, 255)
-GREEN = (0, 204, 0)
-GRAY = (60, 60, 60)
-BLUE = (0, 50, 255)
-YELLOW = (255, 255, 0)
-RED = (255, 0, 0)
-DARKGRAY = (40, 40, 40)
+BLACK     = (0,   0,   0)
+WHITE     = (255, 255, 255)
+GREEN     = (0, 204,   0)
+GRAY      = (60,  60,  60)
+BLUE      = (0,  50, 255)
+YELLOW    = (255,255,   0)
+RED       = (255,  0,   0)
+DARKGRAY  = (40,  40,  40)
 
-BGCOLOR = GRAY
-TEXTCOLOR = WHITE
-TILECOLOR = GREEN
-SHIPCOLOR = YELLOW
+# Tema de cores
+BGCOLOR    = GRAY
+TEXTCOLOR  = WHITE
+TILECOLOR  = GREEN
+SHIPCOLOR  = YELLOW
 
 # Flags de áudio
 SOUND_ON = True
@@ -60,19 +57,19 @@ MUSIC_ON = True
 
 # pré-definição de variáveis globais para o Pylint
 DISPLAYSURF = None
-FPSCLOCK = None
-BASICFONT = None
-BIGFONT = None
-NEW_SURF = NEW_RECT = None
-CONFIG_SURF = CONFIG_RECT = None
-HELP_SURF = HELP_RECT = None
-SHOT_SOUND = EXPLOSION_SOUND = None
+FPSCLOCK     = None
+BASICFONT    = None
+BIGFONT      = None
+NEW_SURF     = NEW_RECT     = None
+CONFIG_SURF  = CONFIG_RECT  = None
+HELP_SURF    = HELP_RECT    = None
+SHOT_SOUND   = EXPLOSION_SOUND = None
 EXPLOSION_IMAGES = None
 
 
 def main():
     """
-    Inicializa Pygame, mixer, janela, fontes, sons e imagens.
+    Inicializa o Pygame, mixer, janela, fontes, sons e imagens.
     """
     global DISPLAYSURF, FPSCLOCK, BASICFONT, BIGFONT
     global NEW_SURF, NEW_RECT, CONFIG_SURF, CONFIG_RECT, HELP_SURF, HELP_RECT
@@ -82,9 +79,9 @@ def main():
     pygame.mixer.init()
 
     DISPLAYSURF = pygame.display.set_mode((WINDOWWIDTH, WINDOWHEIGHT))
-    FPSCLOCK = pygame.time.Clock()
-    BASICFONT = pygame.font.Font('freesansbold.ttf', 20)
-    BIGFONT = pygame.font.Font('freesansbold.ttf', 50)
+    FPSCLOCK    = pygame.time.Clock()
+    BASICFONT   = pygame.font.Font('freesansbold.ttf', 20)
+    BIGFONT     = pygame.font.Font('freesansbold.ttf', 50)
     pygame.display.set_caption('Batalha Naval - Dois Jogadores')
 
     # Música de fundo
@@ -95,15 +92,15 @@ def main():
         pygame.mixer.music.play(-1)
 
     # Botões
-    NEW_SURF = BASICFONT.render('NOVO JOGO', True, TEXTCOLOR)
-    NEW_RECT = NEW_SURF.get_rect(topleft=(WINDOWWIDTH - NEW_SURF.get_width() - 20, 10))
+    NEW_SURF   = BASICFONT.render('NOVO JOGO', True, TEXTCOLOR)
+    NEW_RECT   = NEW_SURF.get_rect(topleft=(WINDOWWIDTH - NEW_SURF.get_width() - 20, 10))
     CONFIG_SURF = BASICFONT.render('CONFIG', True, TEXTCOLOR)
     CONFIG_RECT = CONFIG_SURF.get_rect(topleft=(NEW_RECT.left - CONFIG_SURF.get_width() - 20, 10))
-    HELP_SURF = BASICFONT.render('AJUDA', True, TEXTCOLOR)
-    HELP_RECT = HELP_SURF.get_rect(topleft=(CONFIG_RECT.left - HELP_SURF.get_width() - 20, 10))
+    HELP_SURF  = BASICFONT.render('AJUDA', True, TEXTCOLOR)
+    HELP_RECT  = HELP_SURF.get_rect(topleft=(CONFIG_RECT.left - HELP_SURF.get_width() - 20, 10))
 
     # Efeitos sonoros
-    SHOT_SOUND = pygame.mixer.Sound(os.path.join('sound', 'pew.wav'))
+    SHOT_SOUND      = pygame.mixer.Sound(os.path.join('sound', 'pew.wav'))
     EXPLOSION_SOUND = pygame.mixer.Sound(os.path.join('sound', 'boom.wav'))
 
     # Imagens de explosão
@@ -159,20 +156,20 @@ def run_game():
     Loop principal para dois jogadores.
     Usa lista (players), fila (turn_queue) e pilha (action_stack).
     Retorna (vencedor, tiros). Complexidades: 
-    - deque.rotate(): O(1)
-    - append/pop: O(1)
-    - vitória varre 10×10: O(n²)
+      - deque.rotate(): O(1)
+      - append/pop: O(1)
+      - vitória varre 10×10: O(n²)
     """
-    players = ['Jogador 1', 'Jogador 2']
+    players    = ['Jogador 1', 'Jogador 2']
     turn_queue = deque(players)
     action_stack = []
 
-    boards = {p: generate_default_tiles(None) for p in players}
+    boards   = {p: generate_default_tiles(None)  for p in players}
     revealed = {p: generate_default_tiles(False) for p in players}
     ship_list = [
-        'battleship', 'cruiser1', 'cruiser2',
-        'destroyer1', 'destroyer2', 'destroyer3',
-        'submarine1', 'submarine2', 'submarine3', 'submarine4'
+        'battleship','cruiser1','cruiser2',
+        'destroyer1','destroyer2','destroyer3',
+        'submarine1','submarine2','submarine3','submarine4'
     ]
     for p in players:
         boards[p] = add_ships_to_board(boards[p], ship_list)
@@ -188,18 +185,18 @@ def run_game():
                 if boards[p][x][y] == sh
             ]
 
-    tiros = 0
+    tiros    = 0
     xmarkers = {p: set_markers(boards[p])[0] for p in players}
     ymarkers = {p: set_markers(boards[p])[1] for p in players}
 
     while True:
-        current = turn_queue[0]
+        current  = turn_queue[0]
         opponent = turn_queue[1]
 
         DISPLAYSURF.fill(BGCOLOR)
-        DISPLAYSURF.blit(NEW_SURF, NEW_RECT)
-        DISPLAYSURF.blit(CONFIG_SURF, CONFIG_RECT)
-        DISPLAYSURF.blit(HELP_SURF, HELP_RECT)
+        DISPLAYSURF.blit(NEW_SURF,   NEW_RECT)
+        DISPLAYSURF.blit(CONFIG_SURF,CONFIG_RECT)
+        DISPLAYSURF.blit(HELP_SURF,  HELP_RECT)
         draw_status(current, tiros)
         draw_board(boards[opponent], revealed[opponent])
         draw_markers(xmarkers[opponent], ymarkers[opponent])
@@ -295,7 +292,7 @@ def show_help_screen():
 def show_gameover_screen(vencedor, tiros):
     """Exibe tela de fim de jogo e aguarda tecla para reiniciar."""
     DISPLAYSURF.fill(BGCOLOR)
-    msg = f'{vencedor} venceu em {tiros} tiros!'
+    msg   = f'{vencedor} venceu em {tiros} tiros!'
     surf1, r1 = make_text_objs(msg, BIGFONT, TEXTCOLOR)
     r1.center = (WINDOWWIDTH//2, WINDOWHEIGHT//2 - 20)
     DISPLAYSURF.blit(surf1, r1)
@@ -358,14 +355,12 @@ def draw_board(board, rev):
             lx, ly = left_top_coords_tile(x, y)
             color = TILECOLOR if not rev[x][y] else (SHIPCOLOR if board[x][y] else BGCOLOR)
             pygame.draw.rect(DISPLAYSURF, color, (lx, ly, TILESIZE, TILESIZE))
-    # Linhas verticais
     for i in range(BOARDWIDTH + 1):
         pygame.draw.line(
             DISPLAYSURF, DARKGRAY,
             (XMARGIN + MARKERSIZE + i * TILESIZE, YMARGIN + MARKERSIZE),
             (XMARGIN + MARKERSIZE + i * TILESIZE, WINDOWHEIGHT - YMARGIN)
         )
-    # Linhas horizontais
     for i in range(BOARDHEIGHT + 1):
         pygame.draw.line(
             DISPLAYSURF, DARKGRAY,
