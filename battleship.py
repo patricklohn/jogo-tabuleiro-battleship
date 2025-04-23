@@ -174,22 +174,40 @@ def draw_status(player, tiros):
 
 
 def show_help_screen():
-    """Exibe instruções de jogo e aguarda tecla para retornar."""
+    """
+    Exibe as instruções alinhadas à esquerda, com espaçamento maior.
+    """
     DISPLAYSURF.fill(BGCOLOR)
+
     msgs = [
-        'Para atirar, clique em uma célula do tabuleiro adversário.',
-        'O total de disparos aparece no canto superior esquerdo.',
-        'Acertos disparam explosão; erros revelam água.',
-        'A vez alterna automaticamente após cada tiro.',
-        'Pressione qualquer tecla para voltar.'
+        '• Para atirar: clique em uma célula do tabuleiro adversário.',
+        '• Contador de tiros: canto superior esquerdo.',
+        '• Acertos disparam animação de explosão; erros revelam água.',
+        '• A vez alterna automaticamente após cada tiro.',
+        '• Pressione qualquer tecla para voltar ao jogo.'
     ]
+
+    # Cria painel semitransparente
+    panel_w = WINDOWWIDTH - 2 * XMARGIN
+    panel_h = len(msgs) * (TEXT_HEIGHT * 2) + 40
+    panel = pygame.Surface((panel_w, panel_h), pygame.SRCALPHA)
+    panel.fill((0, 0, 0, 200))  # 80% opacidade
+    panel_rect = panel.get_rect(center=(WINDOWWIDTH // 2, WINDOWHEIGHT // 2))
+    DISPLAYSURF.blit(panel, panel_rect)
+
+    # Definição de margens internas
+    margin_left = panel_rect.left + 20
+    margin_top = panel_rect.top + 20
+    line_spacing = TEXT_HEIGHT * 2  # aumenta o espaço entre linhas
+
+    # Desenha cada linha, alinhada à esquerda
     for i, line in enumerate(msgs):
         surf, rect = make_text_objs(line, BASICFONT, TEXTCOLOR)
-        rect.topleft = (TEXT_LEFT_POSN, TEXT_HEIGHT * (i + 2))
+        rect.topleft = (margin_left, margin_top + i * line_spacing)
         DISPLAYSURF.blit(surf, rect)
+
     pygame.display.update()
     wait_for_key()
-
 
 def show_gameover_screen(vencedor, tiros):
     DISPLAYSURF.fill(BGCOLOR)
