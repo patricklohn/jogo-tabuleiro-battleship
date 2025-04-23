@@ -11,10 +11,14 @@ Versão para dois jogadores do clássico jogo: Batalha Naval.
 Requisitos Técnicos: listas, filas, pilhas, análise Big O, interface Pygame.
 """
 
+# pylint: disable=import-error, wrong-import-order, global-statement, too-many-locals, \
+#     too-many-branches, too-many-statements, too-many-arguments, too-many-positional-arguments, \
+#     missing-function-docstring
+
 import os
 import random
 import sys
-from collections import deque # fila para turnos
+from collections import deque  # fila para turnos
 
 import pygame
 from pygame.locals import QUIT, MOUSEBUTTONUP, KEYDOWN, K_s, K_m
@@ -45,7 +49,6 @@ YELLOW = (255, 255, 0)
 RED = (255, 0, 0)
 DARKGRAY = (40, 40, 40)
 
-# Tema de cores
 BGCOLOR = GRAY
 TEXTCOLOR = WHITE
 TILECOLOR = GREEN
@@ -69,7 +72,7 @@ EXPLOSION_IMAGES = None
 
 def main():
     """
-    Inicializa o Pygame, mixer, janela, fontes, sons e imagens.
+    Inicializa Pygame, mixer, janela, fontes, sons e imagens.
     """
     global DISPLAYSURF, FPSCLOCK, BASICFONT, BIGFONT
     global NEW_SURF, NEW_RECT, CONFIG_SURF, CONFIG_RECT, HELP_SURF, HELP_RECT
@@ -167,9 +170,9 @@ def run_game():
     boards = {p: generate_default_tiles(None) for p in players}
     revealed = {p: generate_default_tiles(False) for p in players}
     ship_list = [
-        'battleship','cruiser1','cruiser2',
-        'destroyer1','destroyer2','destroyer3',
-        'submarine1','submarine2','submarine3','submarine4'
+        'battleship', 'cruiser1', 'cruiser2',
+        'destroyer1', 'destroyer2', 'destroyer3',
+        'submarine1', 'submarine2', 'submarine3', 'submarine4'
     ]
     for p in players:
         boards[p] = add_ships_to_board(boards[p], ship_list)
@@ -212,13 +215,12 @@ def run_game():
             if e.type == MOUSEBUTTONUP:
                 if NEW_RECT.collidepoint(e.pos):
                     return run_game()
-                elif CONFIG_RECT.collidepoint(e.pos):
+                if CONFIG_RECT.collidepoint(e.pos):
                     show_settings_screen()
-                elif HELP_RECT.collidepoint(e.pos):
+                if HELP_RECT.collidepoint(e.pos):
                     show_help_screen()
-                else:
-                    mx, my = e.pos
-                    clicked = True
+                mx, my = e.pos
+                clicked = True
 
         if clicked and mx is not None:
             tx, ty = get_tile_at_pixel(mx, my)
@@ -425,21 +427,20 @@ def add_ships_to_board(board, ships):
     return nb
 
 
-def make_ship_position(board, ship_config):
-    x, y, hor, length, ship = ship_config
+def make_ship_position(board, x, y, hor, length, ship):
     """Calcula e retorna as coordenadas se o navio couber sem conflito."""
     coords = []
     for i in range(length):
-        xx = x + i if hor else x
-        yy = y if hor else y + i
+        nx = x + i if hor else x
+        ny = y if hor else y + i
         if (
-            xx >= BOARDWIDTH or
-            yy >= BOARDHEIGHT or
-            board[xx][yy] is not None or
-            has_adjacent(board, xx, yy, ship)
+            nx >= BOARDWIDTH or
+            ny >= BOARDHEIGHT or
+            board[nx][ny] is not None or
+            has_adjacent(board, nx, ny, ship)
         ):
             return False, []
-        coords.append((xx, yy))
+        coords.append((nx, ny))
     return True, coords
 
 
