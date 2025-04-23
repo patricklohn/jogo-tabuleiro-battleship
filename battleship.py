@@ -11,6 +11,7 @@ Versão para dois jogadores do clássico jogo: Batalha Naval.
 Requisitos Técnicos: listas, filas, pilhas, análise Big O, interface Pygame.
 """
 
+# pylint: disable=import-error
 import os
 import random
 import sys
@@ -67,7 +68,7 @@ SHOT_SOUND   = EXPLOSION_SOUND = None
 EXPLOSION_IMAGES = None
 
 
-def main():
+def main():  # pylint: disable=global-statement
     """
     Inicializa o Pygame, mixer, janela, fontes, sons e imagens.
     """
@@ -92,12 +93,12 @@ def main():
         pygame.mixer.music.play(-1)
 
     # Botões
-    NEW_SURF   = BASICFONT.render('NOVO JOGO', True, TEXTCOLOR)
-    NEW_RECT   = NEW_SURF.get_rect(topleft=(WINDOWWIDTH - NEW_SURF.get_width() - 20, 10))
+    NEW_SURF    = BASICFONT.render('NOVO JOGO', True, TEXTCOLOR)
+    NEW_RECT    = NEW_SURF.get_rect(topleft=(WINDOWWIDTH - NEW_SURF.get_width() - 20, 10))
     CONFIG_SURF = BASICFONT.render('CONFIG', True, TEXTCOLOR)
     CONFIG_RECT = CONFIG_SURF.get_rect(topleft=(NEW_RECT.left - CONFIG_SURF.get_width() - 20, 10))
-    HELP_SURF  = BASICFONT.render('AJUDA', True, TEXTCOLOR)
-    HELP_RECT  = HELP_SURF.get_rect(topleft=(CONFIG_RECT.left - HELP_SURF.get_width() - 20, 10))
+    HELP_SURF   = BASICFONT.render('AJUDA', True, TEXTCOLOR)
+    HELP_RECT   = HELP_SURF.get_rect(topleft=(CONFIG_RECT.left - HELP_SURF.get_width() - 20, 10))
 
     # Efeitos sonoros
     SHOT_SOUND      = pygame.mixer.Sound(os.path.join('sound', 'pew.wav'))
@@ -112,7 +113,7 @@ def main():
         show_gameover_screen(vencedor, tiros)
 
 
-def show_settings_screen():
+def show_settings_screen():  # pylint: disable=global-statement
     """
     Tela de configurações para ativar/desativar som e música,
     redesenhando após cada comando para refletir o novo estado.
@@ -151,17 +152,17 @@ def show_settings_screen():
                 return  # sai das configurações
 
 
-def run_game():
+def run_game():  # pylint: disable=too-many-locals,too-many-branches,too-many-statements
     """
     Loop principal para dois jogadores.
     Usa lista (players), fila (turn_queue) e pilha (action_stack).
-    Retorna (vencedor, tiros). Complexidades: 
+    Retorna (vencedor, tiros). Complexidades:
       - deque.rotate(): O(1)
       - append/pop: O(1)
       - vitória varre 10×10: O(n²)
     """
-    players    = ['Jogador 1', 'Jogador 2']
-    turn_queue = deque(players)
+    players     = ['Jogador 1', 'Jogador 2']
+    turn_queue  = deque(players)
     action_stack = []
 
     boards   = {p: generate_default_tiles(None)  for p in players}
@@ -174,7 +175,6 @@ def run_game():
     for p in players:
         boards[p] = add_ships_to_board(boards[p], ship_list)
 
-    # Mapear todas as posições de cada navio
     ship_positions = {p: {} for p in players}
     for p in players:
         for sh in ship_list:
@@ -194,9 +194,9 @@ def run_game():
         opponent = turn_queue[1]
 
         DISPLAYSURF.fill(BGCOLOR)
-        DISPLAYSURF.blit(NEW_SURF,   NEW_RECT)
-        DISPLAYSURF.blit(CONFIG_SURF,CONFIG_RECT)
-        DISPLAYSURF.blit(HELP_SURF,  HELP_RECT)
+        DISPLAYSURF.blit(NEW_SURF,    NEW_RECT)
+        DISPLAYSURF.blit(CONFIG_SURF, CONFIG_RECT)
+        DISPLAYSURF.blit(HELP_SURF,   HELP_RECT)
         draw_status(current, tiros)
         draw_board(boards[opponent], revealed[opponent])
         draw_markers(xmarkers[opponent], ymarkers[opponent])
@@ -422,7 +422,9 @@ def add_ships_to_board(board, ships):
     return nb
 
 
-def make_ship_position(board, x, y, hor, length, ship):
+def make_ship_position(  # pylint: disable=too-many-arguments,too-many-locals
+    board, x, y, hor, length, ship
+):
     """Calcula e retorna as coordenadas se o navio couber sem conflito."""
     coords = []
     for i in range(length):
