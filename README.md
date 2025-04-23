@@ -4,7 +4,7 @@ Este é um projeto desenvolvido por alunos da Unisul:
 - Erick Vieira
 - Patrick Lohn
 - Rafael Sonoki
-- Ruan
+- Ruan Oliveira
 
 Baseado nos exemplos de Al Sweigart no livro **Making Games with Python & Pygame**:
 <http://inventwithpython.com/pygame/chapters/>
