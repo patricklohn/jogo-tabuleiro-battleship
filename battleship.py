@@ -11,7 +11,7 @@ Versão para dois jogadores do clássico jogo: Batalha Naval.
 Requisitos Técnicos: listas, filas, pilhas, análise Big O, interface Pygame.
 """
 
-# pylint: disable=import-error
+# pylint: disable=import-error,global-statement,too-many-positional-arguments
 import os
 import random
 import sys
@@ -68,7 +68,7 @@ SHOT_SOUND   = EXPLOSION_SOUND = None
 EXPLOSION_IMAGES = None
 
 
-def main():  # pylint: disable=global-statement
+def main():
     """
     Inicializa o Pygame, mixer, janela, fontes, sons e imagens.
     """
@@ -108,6 +108,64 @@ def main():  # pylint: disable=global-statement
     EXPLOSION_IMAGES = [pygame.image.load(f'img/blowup{i}.png') for i in range(1, 7)]
 
     # Loop principal
+    while True:
+        vencedor, tiros = run_game()
+        show_gameover_screen(vencedor, tiros)
+
+
+def show_settings_screen():
+    """
+    Tela de configurações para ativar/desativar som e música,
+    redesenhando após cada comando para refletir o novo estado.
+    """
+    global SOUND_ON, MUSIC_ON
+    while True:
+        DISPLAYSURF.fill(BGCOLOR)
+        options = [
+            f"Efeitos Sonoros: {'On' if SOUND_ON else 'Off'}",
+            f"Música de Fundo: {'On' if MUSIC_ON else 'Off'}",
+            "Pressione S para Som, M para Música, qualquer outra tecla para sair."
+        ]
+        for i, text in enumerate(options):
+            surf, rect = make_text_objs(text, BASICFONT, TEXTCOLOR)
+            rect.center = (
+                WINDOWWIDTH // 2,
+                WINDOWHEIGHT // 3 + i * (TEXT_HEIGHT * 2)
+            )
+            DISPLAYSURF.blit(surf, rect)
+        pygame.display.update()
+
+        ev = pygame.event.wait()
+        if ev.type == QUIT:
+            pygame.quit()
+            sys.exit()
+        if ev.type == KEYDOWN:
+            if ev.key == K_s:
+                SOUND_ON = not SOUND_ON
+            elif ev.key == K_m:
+                MUSIC_ON = not MUSIC_ON
+                if MUSIC_ON:
+                    pygame.mixer.music.unpause()
+                else:
+                    pygame.mixer.music.pause()
+            else:
+                return  # sai das configurações
+
+
+def run_game():
+    """Loop principal..."""  # pylint: disable=too-many-locals,too-many-branches,too-many-statements
+    players     = ['Jogador 1', 'Jogador 2']
+    turn_queue  = deque(players)
+    action_stack = []
+    boards   = {p: generate_default_tiles(None) for p in players}
+    revealed = {p: generate_default_tiles(False) for p in players}
+    ship_list = [...]  # lista de navios
+    for p in players:
+        boards[p] = add_ships_to_board(boards[p], ship_list)
+    ship_positions = {...}
+    tiros    = 0
+    xmarkers = {...}
+    ymarkers = {...}
     while True:
         vencedor, tiros = run_game()
         show_gameover_screen(vencedor, tiros)
