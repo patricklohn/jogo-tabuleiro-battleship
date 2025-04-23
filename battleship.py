@@ -242,15 +242,27 @@ def set_markers(board):
                 xm[x]+=1; ym[y]+=1
     return xm, ym
 
-def draw_markers(xl, yl):
-    for i,v in enumerate(xl):
-        s,r = make_text_objs(str(v), BASICFONT, TEXTCOLOR)
-        r.topleft = (XMARGIN+MARKERSIZE+i*TILESIZE, YMARGIN)
-        DISPLAYSURF.blit(s,r)
-    for i,v in enumerate(yl):
-        s,r = make_text_objs(str(v), BASICFONT, TEXTCOLOR)
-        r.topleft = (XMARGIN, YMARGIN+MARKERSIZE+i*TILESIZE)
-        DISPLAYSURF.blit(s,r)
+def draw_markers(xlist, ylist):
+    """
+    Desenha os marcadores (números) centralizados ao lado do tabuleiro.
+    xlist -> lista de contagens por coluna (marcadores de cima)
+    ylist -> lista de contagens por linha  (marcadores da esquerda)
+    """
+    # marcadores de cima (colunas)
+    for i, val in enumerate(xlist):
+        text_surf, text_rect = make_text_objs(str(val), BASICFONT, TEXTCOLOR)
+        center_x = XMARGIN + MARKERSIZE + i * TILESIZE + TILESIZE / 2
+        center_y = YMARGIN + MARKERSIZE / 2
+        text_rect.center = (center_x, center_y)
+        DISPLAYSURF.blit(text_surf, text_rect)
+
+    # marcadores da esquerda (linhas)
+    for j, val in enumerate(ylist):
+        text_surf, text_rect = make_text_objs(str(val), BASICFONT, TEXTCOLOR)
+        center_x = XMARGIN + MARKERSIZE / 2
+        center_y = YMARGIN + MARKERSIZE + j * TILESIZE + TILESIZE / 2
+        text_rect.center = (center_x, center_y)
+        DISPLAYSURF.blit(text_surf, text_rect)
 
 def add_ships_to_board(board, ships):
     nb=[row[:] for row in board]
