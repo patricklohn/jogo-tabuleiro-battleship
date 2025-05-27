@@ -13,6 +13,8 @@ pygame.init()
 pygame.font.init()
 pygame.mixer.init()
 
+history = []  # Lista para armazenar histórico das partidas
+
 SCREEN_WIDTH, SCREEN_HEIGHT = 1200, 750
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 pygame.display.set_caption("Batalha Naval")
@@ -117,6 +119,21 @@ def game_loop(screen, network, is_server, sound_config, my_ships, enemy_ships):
             draw_text_centered(screen, "Você venceu!", 48, (0, 255, 0), 250)
 
         clock.tick(30)
+
+    if winner == "self":
+        if is_server:
+            history.append(("V", "X"))  # Host venceu
+            host_wins += 1
+        else:
+            history.append(("X", "V"))  # Cliente venceu
+            client_wins += 1
+    else:
+        if is_server:
+            history.append(("X", "V"))  # Cliente venceu
+            client_wins += 1
+        else:
+            history.append(("V", "X"))  # Host venceu
+            host_wins += 1
 
     pygame.display.flip()
     pygame.time.wait(3000)
