@@ -77,6 +77,7 @@ def main():
     global SHOT_SOUND, EXPLOSION_SOUND, EXPLOSION_IMAGES
 
     pygame.init()
+    pygame.font.init()
     pygame.mixer.init()
 
     DISPLAYSURF = pygame.display.set_mode((WINDOWWIDTH, WINDOWHEIGHT))
@@ -101,11 +102,11 @@ def main():
     HELP_RECT   = HELP_SURF.get_rect(topleft=(CONFIG_RECT.left - HELP_SURF.get_width() - 20, 10))
 
     # Efeitos sonoros
-    SHOT_SOUND      = pygame.mixer.Sound(os.path.join('sound', 'pew.wav'))
-    EXPLOSION_SOUND = pygame.mixer.Sound(os.path.join('sound', 'boom.wav'))
+    SHOT_SOUND = pygame.mixer.Sound(os.path.join('assets', 'sounds', 'pew.wav'))
+    EXPLOSION_SOUND = pygame.mixer.Sound(os.path.join('assets', 'sounds', 'boom.wav'))
 
     # Imagens de explosão
-    EXPLOSION_IMAGES = [pygame.image.load(f'img/blowup{i}.png') for i in range(1, 7)]
+    EXPLOSION_IMAGES = [pygame.image.load(f'assets/images/blowup{i}.png') for i in range(1, 7)]
 
     # Loop principal
     while True:
