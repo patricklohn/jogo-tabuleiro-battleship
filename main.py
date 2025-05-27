@@ -8,12 +8,9 @@ import threading
 import time
 from queue import Queue
 
-# Inicializa pygame
 pygame.init()
 pygame.font.init()
 pygame.mixer.init()
-
-history = []  # Lista para armazenar histórico das partidas
 
 SCREEN_WIDTH, SCREEN_HEIGHT = 1200, 750
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
@@ -22,6 +19,8 @@ pygame.display.set_caption("Batalha Naval")
 sound_pew = pygame.mixer.Sound("assets/sounds/pew.wav")
 sound_boom = pygame.mixer.Sound("assets/sounds/boom.wav")
 sound_background = pygame.mixer.Sound("assets/sounds/background.wav")
+
+history = []
 
 def draw_text_centered(screen, text, size, color, y):
     font = pygame.font.SysFont(None, size)
@@ -40,9 +39,8 @@ def game_loop(screen, network, is_server, sound_config, my_ships, enemy_ships):
 
     for ship in my_ships:
         board.place_ship(ship)
-
     for ship in enemy_ships:
-        enemy_board.place_ship([tuple(cell) for cell in ship])  # converte listas para tuplas
+        enemy_board.place_ship([tuple(cell) for cell in ship])
 
     turn_queue = Queue()
     if is_server:
@@ -53,6 +51,7 @@ def game_loop(screen, network, is_server, sound_config, my_ships, enemy_ships):
         turn_queue.put("self")
 
     game_over = False
+    winner = None
 
     if sound_config["background"]:
         sound_background.play(-1)
@@ -103,41 +102,46 @@ def game_loop(screen, network, is_server, sound_config, my_ships, enemy_ships):
                     turn_queue.put("self")
                 elif data.get("action") == "game_over":
                     game_over = True
-                    if data.get("winner"):
-                        draw_text_centered(screen, "Você venceu!", 48, (0, 255, 0), 250)
-                    else:
-                        draw_text_centered(screen, "Você perdeu!", 48, (255, 0, 0), 250)
+                    winner = "self" if data.get("winner") else "enemy"
 
-        # Fim de jogo local
         if board.all_ships_sunk():
             network.send({"action": "game_over", "winner": False})
             game_over = True
-            draw_text_centered(screen, "Você perdeu!", 48, (255, 0, 0), 250)
+            winner = "enemy"
         elif enemy_board.all_ships_sunk():
             network.send({"action": "game_over", "winner": True})
             game_over = True
-            draw_text_centered(screen, "Você venceu!", 48, (0, 255, 0), 250)
+            winner = "self"
 
         clock.tick(30)
 
     if winner == "self":
-        if is_server:
-            history.append(("V", "X"))  # Host venceu
-            host_wins += 1
-        else:
-            history.append(("X", "V"))  # Cliente venceu
-            client_wins += 1
+        draw_text_centered(screen, "Você venceu!", 48, (0, 255, 0), 250)
+        history.append(("V", "X") if is_server else ("X", "V"))
     else:
-        if is_server:
-            history.append(("X", "V"))  # Cliente venceu
-            client_wins += 1
-        else:
-            history.append(("V", "X"))  # Host venceu
-            host_wins += 1
+        draw_text_centered(screen, "Você perdeu!", 48, (255, 0, 0), 250)
+        history.append(("X", "V") if is_server else ("V", "X"))
 
     pygame.display.flip()
     pygame.time.wait(3000)
     sound_background.stop()
+
+def draw_history(screen, history):
+    screen.fill((0, 0, 50))
+    draw_text_centered(screen, "Histórico de Partidas", 40, (255, 255, 255), 50)
+
+    header = "Host       |     Client"
+    font = pygame.font.SysFont(None, 28)
+    header_text = font.render(header, True, (255, 255, 255))
+    screen.blit(header_text, (SCREEN_WIDTH // 2 - header_text.get_width() // 2, 100))
+
+    for i, (h, c) in enumerate(history):
+        line = f"   {h}              {c}"
+        text = font.render(line, True, (255, 255, 255))
+        screen.blit(text, (SCREEN_WIDTH // 2 - text.get_width() // 2, 140 + i * 30))
+
+    pygame.display.flip()
+    pygame.time.wait(4000)
 
 def wait_for_connection(screen, server):
     font = pygame.font.SysFont(None, 36)
@@ -181,7 +185,7 @@ def main():
         config = Config(screen)
         my_ships = config.run()
         if not my_ships:
-            continue  # volta ao menu
+            continue
 
         if choice == "Criar Sala (Servidor)":
             server = NetworkServer()
@@ -216,6 +220,9 @@ def main():
             game_loop(screen, client, is_server=False, sound_config=sound_config,
                       my_ships=my_ships, enemy_ships=data["ships"])
             client.close()
+
+        elif choice == "Ver histórico":
+            draw_history(screen, history)
 
 if __name__ == "__main__":
     try:
