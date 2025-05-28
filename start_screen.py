@@ -4,7 +4,7 @@ class StartScreen:
     def __init__(self, screen):
         self.screen = screen
         self.font = pygame.font.SysFont(None, 48)
-        self.options = ["Jogo Local", "Criar Sala (Servidor)", "Entrar em Sala (Cliente)"]
+        self.options = ["Jogo Local", "Criar Sala (Servidor)", "Entrar em Sala (Cliente)", "Ver histórico", "Sair"]
         self.selected = 0
         self.ip_input_active = False
         self.ip_text = ''
