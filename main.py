@@ -14,7 +14,7 @@ pygame.init()
 pygame.font.init()
 pygame.mixer.init()
 
-SCREEN_WIDTH, SCREEN_HEIGHT = 1200, 750
+SCREEN_WIDTH, SCREEN_HEIGHT = 1000, 650
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 pygame.display.set_caption("Batalha Naval")
 
@@ -25,16 +25,6 @@ sound_background = pygame.mixer.Sound("assets/sounds/background.wav")
 
 history = []
 HISTORY_FILE = "history.txt"
-
-def get_local_ip():
-    try:
-        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        s.connect(("8.8.8.8", 80))
-        ip = s.getsockname()[0]
-        s.close()
-        return ip
-    except Exception:
-        return "127.0.0.1"
 
 def save_history_to_file():
     try:
@@ -97,79 +87,85 @@ def game_loop(screen, network, is_server, sound_config, my_ships, enemy_ships):
 
     while not game_over:
         screen.fill((0, 0, 50))
-        # Mostrar tabuleiros
         board.draw(screen, offset_x=50, offset_y=50, reveal=True)
         enemy_board.draw(screen, offset_x=500, offset_y=50, reveal=False)
 
-        draw_text_centered(screen, "Seu Tabuleiro", 24, (255, 255, 255), 20)
-        draw_text_centered(screen, "Tabuleiro Inimigo", 24, (255, 255, 255), 20)
-
         my_turn = (turn_queue.queue[0] == "self")
         if my_turn:
-            draw_text_centered(screen, "Seu turno", 28, (0, 255, 0), 460)
+            draw_text_centered(screen, "Seu turno - Clique para atacar", 28, (0, 255, 0), 460)
         else:
             draw_text_centered(screen, "Aguardando oponente...", 28, (255, 255, 0), 460)
 
         pygame.display.flip()
 
-        # Processar eventos
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 sound_background.stop()
                 pygame.quit()
                 sys.exit()
-            elif event.type == pygame.MOUSEBUTTONDOWN and my_turn:
-                mx, my = event.pos
-                x = (mx - 500) // 40
-                y = (my - 50) // 40
-                if 0 <= x < 10 and 0 <= y < 10:
-                    cell = (x, y)
-                    play_sound(sound_pew, sound_config.get("pew", True))
-                    try:
-                        network.send({"action": "attack", "cell": cell})
-                        result = network.receive(timeout=5)  # espera resposta até 5s
-                    except Exception:
-                        result = None
-                    if result and "hit" in result:
-                        enemy_board.receive_attack(cell)
-                        if result["hit"]:
-                            play_sound(sound_boom, sound_config.get("boom", True))
-                        # Alterna turno
-                        turn_queue.get()
-                        turn_queue.put("enemy")
 
-        # Turno do oponente: aguardar e processar dados
+            elif event.type == pygame.MOUSEBUTTONDOWN and my_turn and not game_over:
+                mx, my = event.pos
+                if 500 <= mx < 500 + 10*40 and 50 <= my < 50 + 10*40:
+                    x = (mx - 500) // 40
+                    y = (my - 50) // 40
+                    cell = (x, y)
+                    if cell not in enemy_board.hits and cell not in enemy_board.misses:
+                        play_sound(sound_pew, sound_config.get("pew", True))
+
+                        try:
+                            if not network.send({"action": "attack", "cell": cell}):
+                                continue
+
+                            # Espera a resposta do ataque
+                            result = network.receive(timeout=5)
+
+                            if result is None:
+                                # Timeout: continuar esperando
+                                continue
+
+                            if "hit" in result:
+                                if result["hit"]:
+                                    enemy_board.receive_attack(cell)
+                                    play_sound(sound_boom, sound_config.get("boom", True))
+                                else:
+                                    enemy_board.misses.add(cell)
+                                    enemy_board.grid[y][x] = "O"
+
+                                if enemy_board.all_ships_sunk():
+                                    network.send({"action": "game_over", "winner": "self"})
+                                    game_over = True
+                                    winner = "self"
+
+                                turn_queue.get()
+                                turn_queue.put("enemy")
+
+                        except Exception as e:
+                            print(f"Erro durante ataque: {e}")
+                            continue
+
+        # Se não é a minha vez, aguarda ataque do oponente
         if not my_turn:
-            try:
-                data = network.receive(timeout=0.1)  # espera rápida
-            except Exception:
-                data = None
-            if data:
-                if data.get("action") == "attack":
-                    cell = tuple(data["cell"])
-                    hit = board.receive_attack(cell)
-                    network.send({"hit": hit})
+            data = network.receive(timeout=5)
+            if data is None:
+                continue
+
+            if data.get("action") == "attack":
+                cell = tuple(data["cell"])
+                hit = board.receive_attack(cell)
+                network.send({"hit": hit})
+
+                if board.all_ships_sunk():
+                    network.send({"action": "game_over", "winner": "enemy"})
+                    game_over = True
+                    winner = "enemy"
+                else:
                     turn_queue.get()
                     turn_queue.put("self")
-                elif data.get("action") == "game_over":
-                    game_over = True
-                    winner = "self" if data.get("winner") else "enemy"
 
-        # Verificar vitória
-        if board.all_ships_sunk():
-            try:
-                network.send({"action": "game_over", "winner": False})
-            except Exception:
-                pass
-            game_over = True
-            winner = "enemy"
-        elif enemy_board.all_ships_sunk():
-            try:
-                network.send({"action": "game_over", "winner": True})
-            except Exception:
-                pass
-            game_over = True
-            winner = "self"
+            elif data.get("action") == "game_over":
+                game_over = True
+                winner = "self" if data.get("winner") == "self" else "enemy"
 
         clock.tick(30)
 
@@ -247,6 +243,7 @@ def wait_for_connection(screen, server):
         time.sleep(0.1)
 
     return True
+
 def main():
     load_history_from_file()
 
@@ -266,11 +263,11 @@ def main():
 
         if choice == "Sair":
             pygame.quit()
-            sys.exit()  # Encerra o programa imediatamente
+            sys.exit()
 
         elif choice == "Ver histórico":
             draw_history(screen, history)
-            continue  # Volta direto para o menu, sem pedir para escolher barcos
+            continue
 
         elif choice == "Jogo Local":
             import subprocess
