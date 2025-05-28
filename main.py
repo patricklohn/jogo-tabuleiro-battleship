@@ -204,9 +204,20 @@ def draw_history(screen, history):
     pygame.display.flip()
     pygame.time.wait(4000)
 
+def get_local_ip():
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.connect(("8.8.8.8", 80))
+        ip = s.getsockname()[0]
+        s.close()
+        return ip
+    except Exception:
+        return "127.0.0.1"
+
 def wait_for_connection(screen, server):
     font = pygame.font.SysFont(None, 36)
     connected = False
+    host_ip = get_local_ip()
 
     def accept_thread():
         nonlocal connected
@@ -222,8 +233,8 @@ def wait_for_connection(screen, server):
 
     while not connected:
         screen.fill((10, 10, 30))
-        draw_text_centered(screen, "Aguardando conexão do cliente...", 30, (255, 255, 0), SCREEN_HEIGHT // 2)
-        draw_text_centered(screen, "IP do HOST:", 30, (255, 255, 0), SCREEN_HEIGHT // 2)
+        draw_text_centered(screen, "Aguardando conexão do cliente...", 30, (255, 255, 0), SCREEN_HEIGHT // 2 - 40)
+        draw_text_centered(screen, f"IP do HOST: {host_ip}", 30, (255, 255, 0), SCREEN_HEIGHT // 2)
         draw_text_centered(screen, "Pressione ESC para cancelar", 20, (180, 180, 180), SCREEN_HEIGHT // 2 + 40)
         pygame.display.flip()
 
@@ -236,7 +247,6 @@ def wait_for_connection(screen, server):
         time.sleep(0.1)
 
     return True
-
 def main():
     load_history_from_file()
 
