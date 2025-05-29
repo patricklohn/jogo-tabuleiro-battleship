@@ -7,13 +7,14 @@ from config import Config
 import threading
 import time
 from queue import Queue
+import socket
 
 # Inicializa pygame
 pygame.init()
 pygame.font.init()
 pygame.mixer.init()
 
-SCREEN_WIDTH, SCREEN_HEIGHT = 1200, 750
+SCREEN_WIDTH, SCREEN_HEIGHT = 900, 650
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 pygame.display.set_caption("Batalha Naval")
 
@@ -60,8 +61,8 @@ def game_loop(screen, network, is_server, sound_config, my_ships, enemy_ships):
         board.draw(screen, offset_x=50, offset_y=50, reveal=True)
         enemy_board.draw(screen, offset_x=500, offset_y=50, reveal=False)
 
-        draw_text_centered(screen, "Seu Tabuleiro", 24, (255, 255, 255), 20)
-        draw_text_centered(screen, "Tabuleiro Inimigo", 24, (255, 255, 255), 20)
+        draw_text_centered(screen, "VSVSVSVSVSSVVS", 24, (255, 255, 255), 20)
+        draw_text_centered(screen, "--------------", 24, (255, 255, 255), 20)
 
         my_turn = (turn_queue.queue[0] == "self")
         if my_turn:
@@ -122,9 +123,20 @@ def game_loop(screen, network, is_server, sound_config, my_ships, enemy_ships):
     pygame.time.wait(3000)
     sound_background.stop()
 
+def get_local_ip():
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.connect(("8.8.8.8", 80))
+        ip = s.getsockname()[0]
+        s.close()
+        return ip
+    except Exception:
+        return "127.0.0.1"
+
 def wait_for_connection(screen, server):
     font = pygame.font.SysFont(None, 36)
     connected = False
+    host_ip = get_local_ip()
 
     def accept_thread():
         nonlocal connected
@@ -136,7 +148,8 @@ def wait_for_connection(screen, server):
 
     while not connected:
         screen.fill((10, 10, 30))
-        draw_text_centered(screen, "Aguardando conexão do cliente...", 30, (255, 255, 0), SCREEN_HEIGHT // 2)
+        draw_text_centered(screen, "Aguardando conexão do cliente...", 30, (255, 255, 0), SCREEN_HEIGHT // 2 - 40)
+        draw_text_centered(screen, f"IP do HOST: {host_ip}", 30, (255, 255, 0), SCREEN_HEIGHT // 2)
         draw_text_centered(screen, "Pressione ESC para cancelar", 20, (180, 180, 180), SCREEN_HEIGHT // 2 + 40)
         pygame.display.flip()
 
