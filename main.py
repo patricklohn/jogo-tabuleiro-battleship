@@ -63,13 +63,11 @@ def game_loop(screen, network, is_server, sound_config, my_ships, enemy_ships):
     board = Board()
     enemy_board = Board()
 
-    # Posicionar navios no tabuleiro
     for ship in my_ships:
         board.place_ship(ship)
     for ship in enemy_ships:
         enemy_board.place_ship([tuple(cell) for cell in ship])
 
-    # Definir fila de turno: servidor começa (self) ou cliente
     turn_queue = Queue()
     if is_server:
         turn_queue.put("self")
@@ -81,7 +79,6 @@ def game_loop(screen, network, is_server, sound_config, my_ships, enemy_ships):
     game_over = False
     winner = None
 
-    # Tocar música de fundo se habilitada
     if sound_config.get("background", True):
         sound_background.play(-1)
 
@@ -117,16 +114,14 @@ def game_loop(screen, network, is_server, sound_config, my_ships, enemy_ships):
                             if not network.send({"action": "attack", "cell": cell}):
                                 continue
 
-                            # Espera a resposta do ataque
                             result = network.receive(timeout=5)
-
                             if result is None:
-                                # Timeout: continuar esperando
                                 continue
 
                             if "hit" in result:
                                 if result["hit"]:
-                                    enemy_board.receive_attack(cell)
+                                    enemy_board.hits.add(cell)
+                                    enemy_board.grid[y][x] = "X"
                                     play_sound(sound_boom, sound_config.get("boom", True))
                                 else:
                                     enemy_board.misses.add(cell)
@@ -136,15 +131,14 @@ def game_loop(screen, network, is_server, sound_config, my_ships, enemy_ships):
                                     network.send({"action": "game_over", "winner": "self"})
                                     game_over = True
                                     winner = "self"
-
-                                turn_queue.get()
-                                turn_queue.put("enemy")
+                                else:
+                                    turn_queue.get()
+                                    turn_queue.put("enemy")
 
                         except Exception as e:
                             print(f"Erro durante ataque: {e}")
                             continue
 
-        # Se não é a minha vez, aguarda ataque do oponente
         if not my_turn:
             data = network.receive(timeout=5)
             if data is None:
@@ -154,6 +148,10 @@ def game_loop(screen, network, is_server, sound_config, my_ships, enemy_ships):
                 cell = tuple(data["cell"])
                 hit = board.receive_attack(cell)
                 network.send({"hit": hit})
+
+                # Forçar atualização visual do ataque recebido
+                board.draw(screen, offset_x=50, offset_y=50, reveal=True)
+                pygame.display.flip()
 
                 if board.all_ships_sunk():
                     network.send({"action": "game_over", "winner": "enemy"})
@@ -169,7 +167,6 @@ def game_loop(screen, network, is_server, sound_config, my_ships, enemy_ships):
 
         clock.tick(30)
 
-    # Final do jogo: mostrar resultado e salvar histórico
     screen.fill((0, 0, 50))
     if winner == "self":
         draw_text_centered(screen, "Você venceu!", 48, (0, 255, 0), SCREEN_HEIGHT // 2)
@@ -182,6 +179,7 @@ def game_loop(screen, network, is_server, sound_config, my_ships, enemy_ships):
     pygame.display.flip()
     pygame.time.wait(3000)
     sound_background.stop()
+
 
 def draw_history(screen, history):
     screen.fill((0, 0, 50))
