@@ -1,52 +1,25 @@
 import pygame
 import sys
-import threading
-import time
-import os
-from queue import Queue
 from start_screen import StartScreen
 from network import NetworkServer, NetworkClient
 from board import Board
 from config import Config
-import socket
+import threading
+import time
+from queue import Queue
 
+# Inicializa pygame
 pygame.init()
 pygame.font.init()
 pygame.mixer.init()
 
-SCREEN_WIDTH, SCREEN_HEIGHT = 1000, 650
+SCREEN_WIDTH, SCREEN_HEIGHT = 1200, 750
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 pygame.display.set_caption("Batalha Naval")
 
-# Carregar sons
 sound_pew = pygame.mixer.Sound("assets/sounds/pew.wav")
 sound_boom = pygame.mixer.Sound("assets/sounds/boom.wav")
 sound_background = pygame.mixer.Sound("assets/sounds/background.wav")
-
-history = []
-HISTORY_FILE = "history.txt"
-
-def save_history_to_file():
-    try:
-        with open(HISTORY_FILE, "w") as f:
-            for h, c in history:
-                f.write(f"{h},{c}\n")
-    except Exception as e:
-        print("Erro ao salvar histórico:", e)
-
-def load_history_from_file():
-    if not os.path.isfile(HISTORY_FILE):
-        return
-    try:
-        with open(HISTORY_FILE, "r") as f:
-            for line in f:
-                line = line.strip()
-                if line:
-                    parts = line.split(",")
-                    if len(parts) == 2:
-                        history.append((parts[0], parts[1]))
-    except Exception as e:
-        print("Erro ao carregar histórico:", e)
 
 def draw_text_centered(screen, text, size, color, y):
     font = pygame.font.SysFont(None, size)
@@ -65,8 +38,9 @@ def game_loop(screen, network, is_server, sound_config, my_ships, enemy_ships):
 
     for ship in my_ships:
         board.place_ship(ship)
+
     for ship in enemy_ships:
-        enemy_board.place_ship([tuple(cell) for cell in ship])
+        enemy_board.place_ship([tuple(cell) for cell in ship])  # converte listas para tuplas
 
     turn_queue = Queue()
     if is_server:
@@ -77,9 +51,8 @@ def game_loop(screen, network, is_server, sound_config, my_ships, enemy_ships):
         turn_queue.put("self")
 
     game_over = False
-    winner = None
 
-    if sound_config.get("background", True):
+    if sound_config["background"]:
         sound_background.play(-1)
 
     while not game_over:
@@ -87,148 +60,83 @@ def game_loop(screen, network, is_server, sound_config, my_ships, enemy_ships):
         board.draw(screen, offset_x=50, offset_y=50, reveal=True)
         enemy_board.draw(screen, offset_x=500, offset_y=50, reveal=False)
 
+        draw_text_centered(screen, "Seu Tabuleiro", 24, (255, 255, 255), 20)
+        draw_text_centered(screen, "Tabuleiro Inimigo", 24, (255, 255, 255), 20)
+
         my_turn = (turn_queue.queue[0] == "self")
         if my_turn:
-            draw_text_centered(screen, "Seu turno - Clique para atacar", 28, (0, 255, 0), 460)
+            draw_text_centered(screen, "Seu turno", 28, (0, 255, 0), 460)
         else:
             draw_text_centered(screen, "Aguardando oponente...", 28, (255, 255, 0), 460)
 
         pygame.display.flip()
 
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                sound_background.stop()
-                pygame.quit()
-                sys.exit()
-
-            elif event.type == pygame.MOUSEBUTTONDOWN and my_turn and not game_over:
-                mx, my = event.pos
-                if 500 <= mx < 500 + 10*40 and 50 <= my < 50 + 10*40:
+        if my_turn:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    return
+                elif event.type == pygame.MOUSEBUTTONDOWN:
+                    mx, my = event.pos
                     x = (mx - 500) // 40
                     y = (my - 50) // 40
-                    cell = (x, y)
-                    if cell not in enemy_board.hits and cell not in enemy_board.misses:
-                        play_sound(sound_pew, sound_config.get("pew", True))
-
-                        try:
-                            if not network.send({"action": "attack", "cell": cell}):
-                                continue
-
-                            result = network.receive(timeout=5)
-                            if result is None:
-                                continue
-
-                            if "hit" in result:
-                                if result["hit"]:
-                                    enemy_board.hits.add(cell)
-                                    enemy_board.grid[y][x] = "X"
-                                    play_sound(sound_boom, sound_config.get("boom", True))
-                                else:
-                                    enemy_board.misses.add(cell)
-                                    enemy_board.grid[y][x] = "O"
-
-                                if enemy_board.all_ships_sunk():
-                                    network.send({"action": "game_over", "winner": "self"})
-                                    game_over = True
-                                    winner = "self"
-                                else:
-                                    turn_queue.get()
-                                    turn_queue.put("enemy")
-
-                        except Exception as e:
-                            print(f"Erro durante ataque: {e}")
-                            continue
-
-        if not my_turn:
-            data = network.receive(timeout=5)
-            if data is None:
-                continue
-
-            if data.get("action") == "attack":
-                cell = tuple(data["cell"])
-                hit = board.receive_attack(cell)
-                network.send({"hit": hit})
-
-                # Forçar atualização visual do ataque recebido
-                board.draw(screen, offset_x=50, offset_y=50, reveal=True)
-                pygame.display.flip()
-
-                if board.all_ships_sunk():
-                    network.send({"action": "game_over", "winner": "enemy"})
-                    game_over = True
-                    winner = "enemy"
-                else:
+                    if 0 <= x < 10 and 0 <= y < 10:
+                        play_sound(sound_pew, sound_config["pew"])
+                        cell = (x, y)
+                        network.send({"action": "attack", "cell": cell})
+                        result = network.receive()
+                        if result and "hit" in result:
+                            enemy_board.receive_attack(cell)
+                            if result["hit"]:
+                                play_sound(sound_boom, sound_config["boom"])
+                            turn_queue.get()
+                            turn_queue.put("enemy")
+        else:
+            data = network.receive()
+            if data:
+                if data.get("action") == "attack":
+                    cell = tuple(data["cell"])
+                    hit = board.receive_attack(cell)
+                    network.send({"hit": hit})
                     turn_queue.get()
                     turn_queue.put("self")
+                elif data.get("action") == "game_over":
+                    game_over = True
+                    if data.get("winner"):
+                        draw_text_centered(screen, "Você venceu!", 48, (0, 255, 0), 250)
+                    else:
+                        draw_text_centered(screen, "Você perdeu!", 48, (255, 0, 0), 250)
 
-            elif data.get("action") == "game_over":
-                game_over = True
-                winner = "self" if data.get("winner") == "self" else "enemy"
+        # Fim de jogo local
+        if board.all_ships_sunk():
+            network.send({"action": "game_over", "winner": False})
+            game_over = True
+            draw_text_centered(screen, "Você perdeu!", 48, (255, 0, 0), 250)
+        elif enemy_board.all_ships_sunk():
+            network.send({"action": "game_over", "winner": True})
+            game_over = True
+            draw_text_centered(screen, "Você venceu!", 48, (0, 255, 0), 250)
 
         clock.tick(30)
 
-    screen.fill((0, 0, 50))
-    if winner == "self":
-        draw_text_centered(screen, "Você venceu!", 48, (0, 255, 0), SCREEN_HEIGHT // 2)
-        history.append(("V", "X") if is_server else ("X", "V"))
-    else:
-        draw_text_centered(screen, "Você perdeu!", 48, (255, 0, 0), SCREEN_HEIGHT // 2)
-        history.append(("X", "V") if is_server else ("V", "X"))
-
-    save_history_to_file()
     pygame.display.flip()
     pygame.time.wait(3000)
     sound_background.stop()
 
-
-def draw_history(screen, history):
-    screen.fill((0, 0, 50))
-    draw_text_centered(screen, "Histórico de Partidas", 40, (255, 255, 255), 50)
-
-    header = "Host       |     Client"
-    font = pygame.font.SysFont(None, 28)
-    header_text = font.render(header, True, (255, 255, 255))
-    screen.blit(header_text, (SCREEN_WIDTH // 2 - header_text.get_width() // 2, 100))
-
-    for i, (h, c) in enumerate(history):
-        line = f"   {h}              {c}"
-        text = font.render(line, True, (255, 255, 255))
-        screen.blit(text, (SCREEN_WIDTH // 2 - text.get_width() // 2, 140 + i * 30))
-
-    pygame.display.flip()
-    pygame.time.wait(4000)
-
-def get_local_ip():
-    try:
-        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        s.connect(("8.8.8.8", 80))
-        ip = s.getsockname()[0]
-        s.close()
-        return ip
-    except Exception:
-        return "127.0.0.1"
-
 def wait_for_connection(screen, server):
     font = pygame.font.SysFont(None, 36)
     connected = False
-    host_ip = get_local_ip()
 
     def accept_thread():
         nonlocal connected
-        try:
-            server.accept()
-            connected = True
-        except Exception as e:
-            print("Erro ao aceitar conexão:", e)
-            connected = False
+        server.accept()
+        connected = True
 
     t = threading.Thread(target=accept_thread)
     t.start()
 
     while not connected:
         screen.fill((10, 10, 30))
-        draw_text_centered(screen, "Aguardando conexão do cliente...", 30, (255, 255, 0), SCREEN_HEIGHT // 2 - 40)
-        draw_text_centered(screen, f"IP do HOST: {host_ip}", 30, (255, 255, 0), SCREEN_HEIGHT // 2)
+        draw_text_centered(screen, "Aguardando conexão do cliente...", 30, (255, 255, 0), SCREEN_HEIGHT // 2)
         draw_text_centered(screen, "Pressione ESC para cancelar", 20, (180, 180, 180), SCREEN_HEIGHT // 2 + 40)
         pygame.display.flip()
 
@@ -243,31 +151,11 @@ def wait_for_connection(screen, server):
     return True
 
 def main():
-    load_history_from_file()
-
     while True:
         start = StartScreen(screen)
+        choice, ip, sound_config = start.run()
 
-        result = start.run()
-        if isinstance(result, tuple) and len(result) == 3:
-            choice, ip, sound_config = result
-        elif isinstance(result, tuple) and len(result) == 2:
-            choice, ip = result
-            sound_config = {"pew": True, "boom": True, "background": True}
-        else:
-            choice = None
-            ip = None
-            sound_config = {"pew": True, "boom": True, "background": True}
-
-        if choice == "Sair":
-            pygame.quit()
-            sys.exit()
-
-        elif choice == "Ver histórico":
-            draw_history(screen, history)
-            continue
-
-        elif choice == "Jogo Local":
+        if choice == "Jogo Local":
             import subprocess
             pygame.quit()
             subprocess.run(["python", "battleship.py"])
@@ -276,7 +164,7 @@ def main():
         config = Config(screen)
         my_ships = config.run()
         if not my_ships:
-            continue
+            continue  # volta ao menu
 
         if choice == "Criar Sala (Servidor)":
             server = NetworkServer()
@@ -313,4 +201,10 @@ def main():
             client.close()
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except Exception as e:
+        print("Erro inesperado:", e)
+        import traceback
+        traceback.print_exc()
+        input("\nPressione ENTER para sair...")
