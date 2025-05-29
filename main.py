@@ -14,7 +14,7 @@ pygame.init()
 pygame.font.init()
 pygame.mixer.init()
 
-SCREEN_WIDTH, SCREEN_HEIGHT = 900, 650
+SCREEN_WIDTH, SCREEN_HEIGHT = 950, 650
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 pygame.display.set_caption("Batalha Naval")
 
